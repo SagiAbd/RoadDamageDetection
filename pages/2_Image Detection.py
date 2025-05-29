@@ -231,11 +231,11 @@ for idx, image_file in enumerate(image_files):
 
             with col1:
                 st.markdown("**Original Image**")
-                st.image(_image, use_column_width=True)
+                st.image(_image, use_container_width=True)
 
             with col2:
                 st.markdown("**Detection Results**")
-                st.image(_image_pred, use_column_width=True)
+                st.image(_image_pred, use_container_width=True)
                 
                 # Detection summary
                 if detections:
