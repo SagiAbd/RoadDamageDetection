@@ -111,3 +111,6 @@ training/dataset/rddJapanIndiaFiltered/Japan/*
 training/runs/
 training/wandb/
 model_cache/*
+
+# PyTorch model files
+*.pt
