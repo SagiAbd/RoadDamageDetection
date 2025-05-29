@@ -60,19 +60,22 @@ def safe_extract_value(tensor_value):
 # Load the model from HuggingFace
 @st.cache_resource
 def load_model():
-    """Load and cache the YOLO model"""
+    """Load and cache the YOLO model in memory only"""
     try:
-        # Method 1: Download from HuggingFace Hub
+        # Method 1: Download to temporary location (no persistent cache)
         with st.spinner("Downloading model from Hugging Face..."):
-            model_path = hf_hub_download(
-                repo_id=MODEL_REPO,
-                filename=MODEL_FILENAME,
-                cache_dir="./model_cache"
-            )
-        
-        with st.spinner("Loading YOLO model..."):
-            net = YOLO(model_path)
-            
+            import tempfile
+            with tempfile.TemporaryDirectory() as temp_dir:
+                model_path = hf_hub_download(
+                    repo_id=MODEL_REPO,
+                    filename=MODEL_FILENAME,
+                    cache_dir=temp_dir,  # Use temporary directory
+                    local_files_only=False
+                )
+                
+                with st.spinner("Loading YOLO model..."):
+                    net = YOLO(model_path)
+                    
         st.success("✅ Model loaded successfully from Hugging Face!")
         return net
         
@@ -82,21 +85,33 @@ def load_model():
         # Method 2: Try direct loading (fallback)
         try:
             st.info("🔄 Trying alternative loading method...")
-            with st.spinner("Loading model directly..."):
-                net = YOLO(MODEL_REPO)
-            st.success("✅ Model loaded with alternative method!")
+            with st.spinner("Loading model directly from URL..."):
+                # Try loading directly from HuggingFace URL
+                net = YOLO(f"https://huggingface.co/{MODEL_REPO}/resolve/main/{MODEL_FILENAME}")
+            st.success("✅ Model loaded with direct URL method!")
             return net
             
         except Exception as e2:
-            st.error(f"❌ All loading methods failed:")
-            st.error(f"Primary error: {str(e)}")
-            st.error(f"Fallback error: {str(e2)}")
-            
-            st.markdown("### Troubleshooting:")
-            st.markdown("1. Check internet connection")
-            st.markdown("2. Verify repository name and model file")
-            st.markdown("3. Try running: `pip install --upgrade ultralytics huggingface_hub`")
-            st.stop()
+            # Method 3: Last fallback - try repo name directly
+            try:
+                st.info("🔄 Trying repository name method...")
+                with st.spinner("Loading model from repository..."):
+                    net = YOLO(MODEL_REPO)
+                st.success("✅ Model loaded with repository method!")
+                return net
+                
+            except Exception as e3:
+                st.error(f"❌ All loading methods failed:")
+                st.error(f"HuggingFace Hub: {str(e)}")
+                st.error(f"Direct URL: {str(e2)}")
+                st.error(f"Repository: {str(e3)}")
+                
+                st.markdown("### Troubleshooting:")
+                st.markdown("1. Check internet connection")
+                st.markdown("2. Verify repository name and model file")
+                st.markdown("3. Try running: `pip install --upgrade ultralytics huggingface_hub`")
+                st.markdown("4. Check if the model file exists in the repository")
+                st.stop()
 
 # Load model
 net = load_model()
@@ -216,17 +231,17 @@ for idx, image_file in enumerate(image_files):
 
             with col1:
                 st.markdown("**Original Image**")
-                st.image(_image, use_container_width=True)
+                st.image(_image, use_column_width=True)
 
             with col2:
                 st.markdown("**Detection Results**")
-                st.image(_image_pred, use_container_width=True)
+                st.image(_image_pred, use_column_width=True)
                 
                 # Detection summary
                 if detections:
-                    pass
+                    st.success(f"Found {len(detections)} detection(s)")
                 else:
-                    st.info("🔍 No damage detected")
+                    st.info("No damage detected")
 
                 # Download button
                 try:
@@ -250,6 +265,17 @@ for idx, image_file in enumerate(image_files):
         if idx < len(image_files) - 1:  # Add separator except for last image
             st.markdown("---")
 
+# Footer
+st.markdown("---")
+st.markdown("### 💡 Tips for Better Results")
+st.markdown("""
+- **Image Quality**: Use clear, well-lit images for best results
+- **Confidence Threshold**: 
+  - Higher (0.5-0.8): Fewer, more certain detections
+  - Lower (0.1-0.3): More detections, may include false positives
+- **Supported Formats**: PNG, JPG, JPEG
+- **Multiple Images**: Upload several images at once for batch processing
+""")
 
 st.markdown("### 🔧 System Information")
 col1, col2, col3 = st.columns(3)
