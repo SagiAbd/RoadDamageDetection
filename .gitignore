@@ -110,4 +110,4 @@ training/dataset/rddJapanIndiaFiltered/Japan/*
 !training/dataset/rddJapanIndiaFiltered/rdd_JapanIndia.yaml
 training/runs/
 training/wandb/
-model_cache/
+model_cache/*
